@@ -1,0 +1,161 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 300px;
+  margin: 0;
+  padding: 14px 16px 16px;
+  background: #1b1b1f;
+  color: #f2f2f2;
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.tf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.tf-header h1 {
+  font-size: 16px;
+  margin: 0;
+  font-weight: 700;
+}
+
+.tf-toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+.tf-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.tf-toggle-track {
+  position: absolute;
+  inset: 0;
+  background: #3a3a40;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.tf-toggle-track::before {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 2px;
+  top: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 120ms ease;
+}
+
+.tf-toggle input:checked + .tf-toggle-track {
+  background: #7fb069;
+}
+
+.tf-toggle input:checked + .tf-toggle-track::before {
+  transform: translateX(16px);
+}
+
+.tf-section {
+  padding: 10px 0;
+  border-top: 1px solid #2a2a30;
+}
+
+.tf-section:first-of-type {
+  border-top: none;
+}
+
+.tf-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.tf-row label {
+  color: #d5d5d8;
+}
+
+.tf-row-tight {
+  margin-top: 8px;
+}
+
+.tf-value {
+  font-weight: 600;
+  color: #7fb069;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #7fb069;
+}
+
+input[type="number"] {
+  width: 64px;
+  background: #26262c;
+  border: 1px solid #3a3a40;
+  border-radius: 6px;
+  color: #f2f2f2;
+  padding: 4px 6px;
+}
+
+select {
+  width: 100%;
+  background: #26262c;
+  border: 1px solid #3a3a40;
+  border-radius: 6px;
+  color: #f2f2f2;
+  padding: 6px;
+}
+
+.tf-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #d5d5d8;
+  cursor: pointer;
+}
+
+.tf-checkbox:last-child {
+  margin-bottom: 0;
+}
+
+.tf-checkbox input {
+  accent-color: #7fb069;
+}
+
+.tf-stats {
+  display: flex;
+  justify-content: space-between;
+  text-align: center;
+}
+
+.tf-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tf-stat-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #7fb069;
+}
+
+.tf-stat-label {
+  font-size: 10px;
+  color: #9a9aa0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
