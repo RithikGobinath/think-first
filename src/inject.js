@@ -16,9 +16,13 @@
     bypassBelowSec: 30, // skip the lockout entirely once my clock drops below this
     scaleDivisor: 10, // 'scaled' mode only: wait shrinks toward remaining/scaleDivisor seconds
     showSkipButton: true,
-    // TODO(#4): inert until premove cancellation is verified against a live
-    // timed game - see the issue for why. Reserved in the schema so the
-    // popup toggle has somewhere to write once it does something.
+    // Confirmed live (#4): setOptions({enabled:false}) does NOT cancel a
+    // premove armed before the lock engages - it executes instantly the
+    // moment it's my turn, with no visible freeze at all. The only way to
+    // actually prevent that is to disable the board for the opponent's
+    // entire turn (see beginPremoveBlock), which also disables premoving
+    // entirely - there's no way to allow premoves but only block them
+    // "into the lock" specifically. Toggle, not a permanent decision.
     blockPremoveIntoLock: true,
     onComputer: true,
     onOnline: true,
@@ -46,6 +50,9 @@
     countdownRAF: null,
     pieceObserver: null,
     anchorEl: null,
+    premoveBlockActive: false,
+    premoveBlockPrevEnabled: true,
+    premoveGuardInterval: null,
   };
 
   function log(...args) {
@@ -487,6 +494,38 @@
     reportStats({ msWaited: elapsedMs });
   }
 
+  // --- premove blocking ----------------------------------------------------
+  // Confirmed live (#4): a premove armed during the opponent's turn executes
+  // the instant it's my turn, bypassing beginLock() entirely - no visible
+  // freeze. Cancelling it after the fact doesn't work, so instead this
+  // disables the board for the opponent's whole turn (not just a "tail"),
+  // which prevents a premove from ever being armed in the first place. No
+  // overlay/badge here - there's nothing to count down, it's just a passive
+  // hold. Deliberately unconditional restore on end so it can never leave
+  // the board stuck disabled regardless of what beginLock() decides next.
+
+  function beginPremoveBlock(game) {
+    if (lockState.premoveBlockActive) return;
+    if (!config.enabled || !config.blockPremoveIntoLock) return;
+    if (!isApplicable()) return;
+    if (safeIsGameOver(game)) return;
+
+    lockState.premoveBlockActive = true;
+    lockState.premoveBlockPrevEnabled = safeGetEnabled(game);
+    safeSetEnabled(game, false);
+    lockState.premoveGuardInterval = setInterval(() => safeSetEnabled(game, false), 250);
+  }
+
+  function endPremoveBlock(game) {
+    if (!lockState.premoveBlockActive) return;
+
+    lockState.premoveBlockActive = false;
+    clearInterval(lockState.premoveGuardInterval);
+    lockState.premoveGuardInterval = null;
+
+    if (game) safeSetEnabled(game, lockState.premoveBlockPrevEnabled);
+  }
+
   // --- turn detection ---------------------------------------------------------
 
   function onGameLoaded() {
@@ -496,6 +535,7 @@
     if (mySide == null) {
       log("no seat at this board (spectating/analysis) - ignoring");
       endLock(game);
+      endPremoveBlock(game);
       return;
     }
     const turn = safeGetTurn(game);
@@ -503,10 +543,13 @@
 
     if (safeIsGameOver(game)) {
       endLock(game);
+      endPremoveBlock(game);
     } else if (turn === mySide) {
+      endPremoveBlock(game);
       beginLock(game);
     } else {
       endLock(game);
+      beginPremoveBlock(game);
     }
   }
 
@@ -522,8 +565,10 @@
     if (move.color === mySide) {
       log("I moved:", move.san, "- my turn ends");
       endLock(game);
+      beginPremoveBlock(game);
     } else {
       log("opponent moved:", move.san, "- my turn begins");
+      endPremoveBlock(game);
       beginLock(game);
     }
   }
@@ -545,6 +590,7 @@
       } catch (err) {
         warn("error handling Move event", err);
         endLock(game);
+        endPremoveBlock(game);
       }
     };
     const onCreateOrLoad = () => {
@@ -553,11 +599,15 @@
       } catch (err) {
         warn("error handling game load", err);
         endLock(game);
+        endPremoveBlock(game);
       }
     };
     // Fail-open: nothing about "the game just ended" should leave the board
     // frozen behind it.
-    const onGameEnd = () => endLock(game);
+    const onGameEnd = () => {
+      endLock(game);
+      endPremoveBlock(game);
+    };
 
     game.on("Move", onMove);
     game.on("CreateGame", onCreateOrLoad);
@@ -567,6 +617,7 @@
 
     state.unbindGame = () => {
       endLock(game);
+      endPremoveBlock(game);
       try {
         game.off("Move", onMove);
         game.off("CreateGame", onCreateOrLoad);
@@ -641,11 +692,16 @@
     Object.assign(config, DEFAULT_CONFIG, payload || {});
     log("config updated", config);
 
-    if (!config.enabled && lockState.active) {
-      endLock(state.boundGame); // fail-open: turning the extension off must never leave a lock stuck
+    if (!config.enabled) {
+      // fail-open: turning the extension off must never leave the board stuck
+      if (lockState.active) endLock(state.boundGame);
+      if (lockState.premoveBlockActive) endPremoveBlock(state.boundGame);
     }
     if (config.enabled && !wasEnabled && state.boundGame) {
       onGameLoaded(); // re-evaluate now that we're back on, in case it's already my turn
+    }
+    if (!config.blockPremoveIntoLock && lockState.premoveBlockActive) {
+      endPremoveBlock(state.boundGame); // toggled off mid-block - release immediately
     }
   }
 
@@ -676,7 +732,10 @@
     setInterval(tryAttach, 2000);
 
     // Fail-open on tab close/navigation so we never leave a real game frozen.
-    const unlockOnExit = () => endLock(state.boundGame);
+    const unlockOnExit = () => {
+      endLock(state.boundGame);
+      endPremoveBlock(state.boundGame);
+    };
     window.addEventListener("beforeunload", unlockOnExit);
     window.addEventListener("pagehide", unlockOnExit);
   }
