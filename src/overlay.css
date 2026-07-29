@@ -55,8 +55,22 @@
   background: rgba(255, 255, 255, 0.22);
 }
 
-/* Only used if the clock row couldn't be found at all - pin to the board's
-   corner instead of not showing anything. */
+/* Applied to #board-layout-player-bottom only when it isn't already
+   positioned, so .ctf-badge-anchored has something to anchor against
+   without disturbing chess.com's own layout of that row. */
+.ctf-anchor {
+  position: relative !important;
+}
+
+.ctf-badge-anchored {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  /* `right` is set inline per-mount, based on whether a clock was found. */
+}
+
+/* Only used if the player row couldn't be found at all - pin to the
+   board's corner instead of not showing anything. */
 .ctf-badge-fallback {
   position: absolute;
   right: 8px;

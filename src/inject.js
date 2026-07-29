@@ -45,6 +45,7 @@
     overlayEl: null,
     countdownRAF: null,
     pieceObserver: null,
+    anchorEl: null,
   };
 
   function log(...args) {
@@ -307,19 +308,13 @@
     }
   }
 
-  function findBadgeAnchor() {
-    const container = document.querySelector("#board-layout-player-bottom");
-    if (!container) return null;
-
-    const clockEl = container.querySelector('[class*="clock-component"], [class*="clock"]');
-    if (clockEl && clockEl.parentElement) {
-      return { insertBefore: clockEl, parent: clockEl.parentElement };
-    }
-
-    const row = container.querySelector(".player-row-container") || container.querySelector(".player-row-component") || container;
-    return { insertBefore: null, parent: row };
-  }
-
+  // Confirmed live (two different chess.com layouts - an untimed bot game
+  // and a timed page) that #board-layout-player-bottom's internal layout
+  // isn't reliable: in one case its row container is display:block, so a
+  // plain appendChild() pushed the badge onto a new line below the
+  // username instead of sitting beside it. Anchoring by position:absolute
+  // sidesteps that entirely - the badge's spot is independent of whatever
+  // flex/block layout that container happens to use.
   function unmountOverlay() {
     if (lockState.countdownRAF != null) {
       cancelAnimationFrame(lockState.countdownRAF);
@@ -328,6 +323,10 @@
     if (lockState.overlayEl) {
       lockState.overlayEl.remove();
       lockState.overlayEl = null;
+    }
+    if (lockState.anchorEl) {
+      lockState.anchorEl.classList.remove("ctf-anchor");
+      lockState.anchorEl = null;
     }
     stopPieceObserver();
     dimAllPieces(state.boundEl, false);
@@ -344,13 +343,23 @@
     badge.innerHTML =
       '<span class="ctf-badge-seconds"></span>' + (config.showSkipButton ? '<button type="button" class="ctf-skip">Skip</button>' : "");
 
-    const anchor = findBadgeAnchor();
-    if (anchor && anchor.insertBefore) {
-      anchor.parent.insertBefore(badge, anchor.insertBefore);
-    } else if (anchor && anchor.parent) {
-      anchor.parent.appendChild(badge);
+    const container = document.querySelector("#board-layout-player-bottom");
+    if (container) {
+      // Only force position:relative if it isn't already positioned -
+      // don't clobber a layout chess.com already controls.
+      if (getComputedStyle(container).position === "static") {
+        container.classList.add("ctf-anchor");
+        lockState.anchorEl = container;
+      }
+      // If a clock element exists, clear it so the badge doesn't overlap
+      // the digits; otherwise sit flush against the row's right edge.
+      const clockEl = container.querySelector('[class*="clock-component"], [class*="clock"]');
+      const rightOffset = clockEl ? clockEl.getBoundingClientRect().width + 12 : 8;
+      badge.classList.add("ctf-badge-anchored");
+      badge.style.right = rightOffset + "px";
+      container.appendChild(badge);
     } else {
-      // Couldn't find the clock row at all - pin to the board's corner
+      // Couldn't find the player row at all - pin to the board's corner
       // rather than not showing anything.
       const boardAnchor = document.querySelector("#board-layout-chessboard") || state.boundEl;
       if (boardAnchor) boardAnchor.appendChild(badge);
