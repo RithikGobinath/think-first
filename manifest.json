@@ -5,6 +5,11 @@
   "description": "Locks the chess.com board for a few seconds at the start of your turn so you actually think before moving.",
   "permissions": ["storage"],
   "host_permissions": ["https://www.chess.com/*"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "content_scripts": [
     {
       "matches": ["https://www.chess.com/*"],
@@ -21,6 +26,11 @@
   ],
   "action": {
     "default_popup": "src/popup.html",
-    "default_title": "Think First"
+    "default_title": "Think First",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   }
 }
