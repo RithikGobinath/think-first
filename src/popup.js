@@ -47,6 +47,7 @@
     showSkipButton: document.getElementById("showSkipButton"),
     onComputer: document.getElementById("onComputer"),
     onOnline: document.getElementById("onOnline"),
+    blockPremoveIntoLock: document.getElementById("blockPremoveIntoLock"),
     skipKeyInput: document.getElementById("skipKeyInput"),
     statLocks: document.getElementById("statLocks"),
     statSkips: document.getElementById("statSkips"),
@@ -96,6 +97,7 @@
     els.showSkipButton.checked = cfg.showSkipButton;
     els.onComputer.checked = cfg.onComputer;
     els.onOnline.checked = cfg.onOnline;
+    els.blockPremoveIntoLock.checked = cfg.blockPremoveIntoLock;
     els.skipKeyInput.value = codeToLabel(cfg.skipKey);
     updateScaleDivisorVisibility(cfg.clockMode);
 
@@ -130,6 +132,7 @@
   els.showSkipButton.addEventListener("change", () => storageSet({ showSkipButton: els.showSkipButton.checked }));
   els.onComputer.addEventListener("change", () => storageSet({ onComputer: els.onComputer.checked }));
   els.onOnline.addEventListener("change", () => storageSet({ onOnline: els.onOnline.checked }));
+  els.blockPremoveIntoLock.addEventListener("change", () => storageSet({ blockPremoveIntoLock: els.blockPremoveIntoLock.checked }));
 
   // Click-to-capture rebind: focus the box, press the desired key, done.
   // Readonly so typing can't leave stray characters in it.
