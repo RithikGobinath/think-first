@@ -4,17 +4,17 @@
   // Keep in sync with the :root block in src/overlay.css. min/max/step are
   // playground-only conveniences - the CSS itself has no hard limits.
   const VARS = [
-    { name: "--ctf-badge-gap", label: "Badge gap", default: 8, min: 0, max: 24, unit: "px" },
-    { name: "--ctf-badge-padding-y", label: "Badge padding (vertical)", default: 3, min: 0, max: 20, unit: "px" },
-    { name: "--ctf-badge-padding-x", label: "Badge padding (horizontal)", default: 10, min: 0, max: 30, unit: "px" },
+    { name: "--ctf-badge-gap", label: "Badge gap", default: 10, min: 0, max: 24, unit: "px" },
+    { name: "--ctf-badge-padding-y", label: "Badge padding (vertical)", default: 6, min: 0, max: 20, unit: "px" },
+    { name: "--ctf-badge-padding-x", label: "Badge padding (horizontal)", default: 16, min: 0, max: 30, unit: "px" },
     { name: "--ctf-badge-radius", label: "Badge corner radius", default: 999, min: 0, max: 999, unit: "px" },
-    { name: "--ctf-badge-border-width", label: "Badge border width", default: 1.5, min: 0, max: 6, step: 0.5, unit: "px" },
-    { name: "--ctf-badge-font-size", label: "Badge font size", default: 13, min: 8, max: 28, unit: "px" },
+    { name: "--ctf-badge-border-width", label: "Badge border width", default: 2, min: 0, max: 6, step: 0.5, unit: "px" },
+    { name: "--ctf-badge-font-size", label: "Badge font size", default: 20, min: 8, max: 28, unit: "px" },
     { name: "--ctf-seconds-font-size", label: "Seconds font size", default: 14, min: 8, max: 32, unit: "px" },
-    { name: "--skip-padding-y", label: "Skip button padding (vertical)", default: 1, min: 0, max: 16, unit: "px" },
-    { name: "--skip-padding-x", label: "Skip button padding (horizontal)", default: 8, min: 0, max: 24, unit: "px" },
+    { name: "--skip-padding-y", label: "Skip button padding (vertical)", default: 3, min: 0, max: 16, unit: "px" },
+    { name: "--skip-padding-x", label: "Skip button padding (horizontal)", default: 9, min: 0, max: 24, unit: "px" },
     { name: "--skip-radius", label: "Skip button corner radius", default: 999, min: 0, max: 999, unit: "px" },
-    { name: "--skip-font-size", label: "Skip button font size", default: 11, min: 8, max: 24, unit: "px" },
+    { name: "--skip-font-size", label: "Skip button font size", default: 12, min: 8, max: 24, unit: "px" },
   ];
 
   const root = document.documentElement;
