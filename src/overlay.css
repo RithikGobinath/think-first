@@ -7,16 +7,37 @@
    with !important, but a direct inline style with 'important' priority
    sticks. See setPieceDimmed() in inject.js. */
 
+/* Every visual dimension of the badge is a custom property, defaulted
+   here on :root rather than redeclared on .ctf-badge itself - that split
+   is deliberate. It means these are live-tunable from a console one-liner
+   like document.documentElement.style.setProperty('--ctf-badge-font-size',
+   '18px'): that sets an inline style on <html>, which beats this :root
+   rule in the cascade, and .ctf-badge inherits the new value because it
+   only consumes the variable below, it never redefines it. */
+:root {
+  --ctf-badge-gap: 8px;
+  --ctf-badge-padding-y: 3px;
+  --ctf-badge-padding-x: 10px;
+  --ctf-badge-radius: 999px;
+  --ctf-badge-border-width: 1.5px;
+  --ctf-badge-font-size: 13px;
+  --ctf-seconds-font-size: 14px;
+  --skip-padding-y: 1px;
+  --skip-padding-x: 8px;
+  --skip-radius: 999px;
+  --skip-font-size: 11px;
+}
+
 .ctf-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 3px 10px;
+  gap: var(--ctf-badge-gap);
+  padding: var(--ctf-badge-padding-y) var(--ctf-badge-padding-x);
   margin: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--ctf-badge-radius);
   background: rgba(127, 176, 105, 0.16);
-  border: 1.5px solid #7fb069;
-  font: 700 13px system-ui, sans-serif;
+  border: var(--ctf-badge-border-width) solid #7fb069;
+  font: 700 var(--ctf-badge-font-size) system-ui, sans-serif;
   color: #f2f2f2;
   vertical-align: middle;
   white-space: nowrap;
@@ -26,7 +47,7 @@
 
 .ctf-badge-seconds {
   color: #9fd685;
-  font-size: 14px;
+  font-size: var(--ctf-seconds-font-size);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -42,12 +63,12 @@
 }
 
 .ctf-skip {
-  padding: 1px 8px;
-  border-radius: 999px;
+  padding: var(--skip-padding-y) var(--skip-padding-x);
+  border-radius: var(--skip-radius);
   border: 1px solid rgba(255, 255, 255, 0.4);
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  font: 700 11px system-ui, sans-serif;
+  font: 700 var(--skip-font-size) system-ui, sans-serif;
   cursor: pointer;
 }
 
