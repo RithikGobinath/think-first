@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Think First</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="tf-header">
+      <h1>Think First</h1>
+      <label class="tf-toggle">
+        <input type="checkbox" id="enabled" />
+        <span class="tf-toggle-track"></span>
+      </label>
+    </header>
+
+    <section class="tf-section">
+      <div class="tf-row">
+        <label for="waitMs">Wait before you can move</label>
+        <span class="tf-value" id="waitMsValue">10s</span>
+      </div>
+      <input type="range" id="waitMs" min="3000" max="30000" step="1000" />
+    </section>
+
+    <section class="tf-section">
+      <div class="tf-row">
+        <label for="clockMode">When my clock runs low</label>
+      </div>
+      <select id="clockMode">
+        <option value="fixed">Skip the wait below threshold</option>
+        <option value="scaled">Shrink the wait as time drops</option>
+      </select>
+
+      <div class="tf-row tf-row-tight">
+        <label for="bypassBelowSec">Threshold (seconds remaining)</label>
+        <input type="number" id="bypassBelowSec" min="0" max="120" />
+      </div>
+
+      <div class="tf-row tf-row-tight" id="scaleDivisorRow">
+        <label for="scaleDivisor">Scale divisor</label>
+        <input type="number" id="scaleDivisor" min="1" max="60" />
+      </div>
+    </section>
+
+    <section class="tf-section">
+      <label class="tf-checkbox">
+        <input type="checkbox" id="showSkipButton" />
+        Show a skip-wait button on the board
+      </label>
+      <label class="tf-checkbox">
+        <input type="checkbox" id="onComputer" />
+        Apply against the computer (/play/computer)
+      </label>
+      <label class="tf-checkbox">
+        <input type="checkbox" id="onOnline" />
+        Apply in live/online games
+      </label>
+    </section>
+
+    <section class="tf-section tf-stats">
+      <div class="tf-stat">
+        <span class="tf-stat-value" id="statLocks">0</span>
+        <span class="tf-stat-label">locks served</span>
+      </div>
+      <div class="tf-stat">
+        <span class="tf-stat-value" id="statSkips">0</span>
+        <span class="tf-stat-label">skips</span>
+      </div>
+      <div class="tf-stat">
+        <span class="tf-stat-value" id="statWaited">0s</span>
+        <span class="tf-stat-label">spent thinking</span>
+      </div>
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
