@@ -1,0 +1,159 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #1b1b1f;
+  color: #f2f2f2;
+  font: 13px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.dp-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.dp-board-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  background: #5c1f1a;
+}
+
+.dp-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 480px;
+  padding: 4px 0;
+  position: relative; /* baseline for badges even when ctf-anchor is skipped */
+}
+
+.dp-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dp-board {
+  width: 480px;
+  height: 480px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  border: 2px solid #3a1512;
+}
+
+.dp-board div:nth-child(odd) {
+  background: #eed9b6;
+}
+
+.dp-board div:nth-child(even) {
+  background: #a9713f;
+}
+
+/* Chess.com's checkerboard alternates per-row too, not just per-cell index -
+   flip every other row so it isn't a diagonal stripe. */
+.dp-board div:nth-child(16n + 1),
+.dp-board div:nth-child(16n + 3),
+.dp-board div:nth-child(16n + 5),
+.dp-board div:nth-child(16n + 7),
+.dp-board div:nth-child(16n + 9),
+.dp-board div:nth-child(16n + 11),
+.dp-board div:nth-child(16n + 13),
+.dp-board div:nth-child(16n + 15) {
+  background: #a9713f;
+}
+
+.dp-board div:nth-child(16n + 2),
+.dp-board div:nth-child(16n + 4),
+.dp-board div:nth-child(16n + 6),
+.dp-board div:nth-child(16n + 8),
+.dp-board div:nth-child(16n + 10),
+.dp-board div:nth-child(16n + 12),
+.dp-board div:nth-child(16n + 14),
+.dp-board div:nth-child(16n + 16) {
+  background: #eed9b6;
+}
+
+.dp-controls {
+  width: 380px;
+  padding: 20px;
+  background: #16161a;
+  overflow-y: auto;
+}
+
+.dp-controls h1 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+
+.dp-hint {
+  color: #9a9aa0;
+  font-size: 12px;
+  margin: 0 0 16px;
+}
+
+.dp-hint code {
+  color: #9fd685;
+}
+
+.dp-slider-row {
+  margin-bottom: 12px;
+}
+
+.dp-slider-row label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #d5d5d8;
+}
+
+.dp-slider-row .dp-slider-value {
+  color: #7fb069;
+  font-weight: 600;
+}
+
+.dp-slider-row input[type="range"] {
+  width: 100%;
+  accent-color: #7fb069;
+}
+
+.dp-actions {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 10px;
+}
+
+.dp-actions button {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #3a3a40;
+  background: #26262c;
+  color: #f2f2f2;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dp-actions button:hover {
+  background: #313138;
+}
+
+#output {
+  width: 100%;
+  background: #0f0f12;
+  border: 1px solid #3a3a40;
+  border-radius: 6px;
+  color: #9fd685;
+  font: 11px/1.4 ui-monospace, monospace;
+  padding: 8px;
+  resize: vertical;
+}

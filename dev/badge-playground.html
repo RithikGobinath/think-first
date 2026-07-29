@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Think First - badge playground</title>
+    <!-- The real production stylesheet, not a copy - this can never drift
+         out of sync with what actually ships. -->
+    <link rel="stylesheet" href="../src/overlay.css" />
+    <link rel="stylesheet" href="badge-playground.css" />
+  </head>
+  <body>
+    <div class="dp-layout">
+      <div class="dp-board-area">
+        <div class="dp-player dp-player-top">
+          <div class="dp-avatar" style="background: #6b8f4e"></div>
+          <span>Karim (850)</span>
+        </div>
+
+        <div class="dp-board" id="board"></div>
+
+        <!-- Mirrors chess.com's real #board-layout-player-bottom / .ctf-anchor
+             setup, so the badge's position:absolute anchoring behaves
+             identically here to how it does in the real extension. -->
+        <div class="dp-player dp-player-bottom ctf-anchor" id="playerBottom">
+          <div class="dp-avatar" style="background: #4e7a8f"></div>
+          <span>rithikthegr8</span>
+
+          <div class="ctf-badge ctf-badge-anchored" id="badge" style="right: 8px">
+            <span class="ctf-badge-seconds">3s</span>
+            <button type="button" class="ctf-skip">Skip</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dp-controls">
+        <h1>Badge playground</h1>
+        <p class="dp-hint">
+          Every slider maps 1:1 to a CSS custom property in <code>src/overlay.css</code>.
+          Tune until it looks right, then click "Copy CSS" and paste the result back.
+        </p>
+
+        <div id="sliders"></div>
+
+        <div class="dp-actions">
+          <button type="button" id="resetBtn">Reset to defaults</button>
+          <button type="button" id="copyBtn">Copy CSS</button>
+        </div>
+        <textarea id="output" readonly rows="6"></textarea>
+      </div>
+    </div>
+
+    <script src="badge-playground.js"></script>
+  </body>
+</html>
