@@ -16,12 +16,12 @@
    only consumes the variable below, it never redefines it. */
 :root {
   --ctf-badge-gap: 10px;
-  --ctf-badge-padding-y: 6px;
-  --ctf-badge-padding-x: 16px;
+  --ctf-badge-padding-y: 5px;
+  --ctf-badge-padding-x: 13px;
   --ctf-badge-radius: 999px;
   --ctf-badge-border-width: 2px;
-  --ctf-badge-font-size: 20px;
-  --ctf-seconds-font-size: 14px;
+  --ctf-badge-font-size: 18px;
+  --ctf-seconds-font-size: 18px;
   --skip-padding-y: 3px;
   --skip-padding-x: 9px;
   --skip-radius: 999px;
