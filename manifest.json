@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Think First - Chess.com Move Lockout",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Locks the chess.com board for a few seconds at the start of your turn so you actually think before moving.",
   "permissions": ["storage"],
   "host_permissions": ["https://www.chess.com/*"],
