@@ -14,6 +14,8 @@
     blockPremoveIntoLock: true,
     onComputer: true,
     onOnline: true,
+    pieceDimIntensity: 25,
+    skipKey: "Space",
     stats: { locksServed: 0, skips: 0, msWaited: 0 },
   };
 

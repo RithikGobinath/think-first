@@ -22,6 +22,8 @@
     blockPremoveIntoLock: true,
     onComputer: true,
     onOnline: true,
+    pieceDimIntensity: 25, // 0-100: 0 = no dimming, 100 = strongest (opacity 0.5, full grayscale)
+    skipKey: "Space", // KeyboardEvent.code
   };
 
   const config = Object.assign({}, DEFAULT_CONFIG);
@@ -259,13 +261,19 @@
   // tries a few reasonable spots and degrades to a fixed corner badge
   // rather than failing to mount at all.
 
-  const PIECE_DIM_OPACITY = "0.55";
-  const PIECE_DIM_FILTER = "grayscale(55%)";
+  function pieceDimStyle() {
+    const pct = Math.max(0, Math.min(100, Number(config.pieceDimIntensity)));
+    // 0 -> opacity 1.0 (no dimming), 100 -> opacity 0.5 (strongest we allow -
+    // 0 opacity would make pieces disappear entirely, which isn't "dimmed").
+    const opacity = (1 - (pct / 100) * 0.5).toFixed(2);
+    return { opacity, filter: `grayscale(${pct}%)` };
+  }
 
   function setPieceDimmed(el, dimmed) {
     if (dimmed) {
-      el.style.setProperty("opacity", PIECE_DIM_OPACITY, "important");
-      el.style.setProperty("filter", PIECE_DIM_FILTER, "important");
+      const style = pieceDimStyle();
+      el.style.setProperty("opacity", style.opacity, "important");
+      el.style.setProperty("filter", style.filter, "important");
     } else {
       el.style.removeProperty("opacity");
       el.style.removeProperty("filter");
@@ -353,14 +361,31 @@
 
     const skipBtn = badge.querySelector(".ctf-skip");
     if (skipBtn) {
-      skipBtn.addEventListener("click", () => {
-        log("skip button clicked");
-        reportStats({ skips: 1 });
-        endLock(game);
-      });
+      skipBtn.addEventListener("click", () => performSkip(game));
     }
 
     startCountdownAnimation();
+  }
+
+  function performSkip(game) {
+    log("skip triggered");
+    reportStats({ skips: 1 });
+    endLock(game);
+  }
+
+  function isEditableTarget(target) {
+    if (!target) return false;
+    if (target.isContentEditable) return true;
+    const tag = target.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+  }
+
+  function onSkipKeyDown(event) {
+    if (!lockState.active) return;
+    if (!config.skipKey || event.code !== config.skipKey) return;
+    if (isEditableTarget(event.target)) return; // don't hijack chat/search input
+    event.preventDefault();
+    performSkip(state.boundGame);
   }
 
   function startCountdownAnimation() {
@@ -627,6 +652,7 @@
 
     window.addEventListener("message", onWindowMessage);
     window.postMessage({ source: "ctf-inject", type: "requestConfig" }, "*");
+    window.addEventListener("keydown", onSkipKeyDown);
 
     tryAttach();
 
