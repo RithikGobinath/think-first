@@ -15,6 +15,7 @@
     clockMode: "fixed", // 'fixed' | 'scaled'
     bypassBelowSec: 30, // skip the lockout entirely once my clock drops below this
     scaleDivisor: 10, // 'scaled' mode only: wait shrinks toward remaining/scaleDivisor seconds
+    showSkipButton: true,
   };
 
   const state = {
@@ -31,6 +32,8 @@
     startTs: 0,
     durationMs: 0,
     prevEnabled: true,
+    overlayEl: null,
+    countdownRAF: null,
   };
 
   function log(...args) {
@@ -186,6 +189,87 @@
   // exit path (turn ends, game over, resign, mode change, tab unload, a
   // thrown error, or the watchdog) routes through endLock().
 
+  // --- overlay -------------------------------------------------------------
+  // Purely visual - dragging a piece during a lock already does nothing
+  // because of the `enabled` flag, so the veil below is pointer-events:none
+  // and can never be the thing actually blocking input. Only the skip
+  // button opts back into pointer events.
+
+  function unmountOverlay() {
+    if (lockState.countdownRAF != null) {
+      cancelAnimationFrame(lockState.countdownRAF);
+      lockState.countdownRAF = null;
+    }
+    if (lockState.overlayEl) {
+      lockState.overlayEl.remove();
+      lockState.overlayEl = null;
+    }
+  }
+
+  function mountOverlay(game) {
+    unmountOverlay();
+
+    const anchor = document.querySelector("#board-layout-chessboard") || state.boundEl;
+    if (!anchor) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "ctf-overlay";
+    wrap.innerHTML =
+      '<div class="ctf-veil"></div>' +
+      '<div class="ctf-panel">' +
+      '<div class="ctf-ring">' +
+      '<svg viewBox="0 0 100 100">' +
+      '<circle class="ctf-ring-bg" cx="50" cy="50" r="45"></circle>' +
+      '<circle class="ctf-ring-fg" cx="50" cy="50" r="45"></circle>' +
+      "</svg>" +
+      '<span class="ctf-seconds"></span>' +
+      "</div>" +
+      '<div class="ctf-label">Think.</div>' +
+      (config.showSkipButton ? '<button type="button" class="ctf-skip">Skip wait</button>' : "") +
+      "</div>";
+
+    anchor.appendChild(wrap);
+    lockState.overlayEl = wrap;
+
+    const skipBtn = wrap.querySelector(".ctf-skip");
+    if (skipBtn) {
+      skipBtn.addEventListener("click", () => {
+        log("skip button clicked");
+        endLock(game);
+      });
+    }
+
+    startCountdownAnimation();
+  }
+
+  function startCountdownAnimation() {
+    const overlay = lockState.overlayEl;
+    if (!overlay) return;
+
+    const ring = overlay.querySelector(".ctf-ring-fg");
+    const label = overlay.querySelector(".ctf-seconds");
+    const circumference = 2 * Math.PI * 45;
+    if (ring) {
+      ring.style.strokeDasharray = String(circumference);
+      ring.style.strokeDashoffset = "0";
+    }
+
+    function tick() {
+      if (!lockState.active || lockState.overlayEl !== overlay) return;
+
+      const elapsed = performance.now() - lockState.startTs;
+      const remainMs = Math.max(0, lockState.durationMs - elapsed);
+      const frac = lockState.durationMs > 0 ? remainMs / lockState.durationMs : 0;
+
+      if (ring) ring.style.strokeDashoffset = String(circumference * (1 - frac));
+      if (label) label.textContent = String(Math.ceil(remainMs / 1000));
+
+      lockState.countdownRAF = requestAnimationFrame(tick);
+    }
+
+    tick();
+  }
+
   function computeDuration(game) {
     const remaining = readMyClockSeconds(game);
     if (remaining == null) return config.waitMs; // untimed - always the full wait
@@ -218,6 +302,7 @@
     lockState.startTs = performance.now();
 
     safeSetEnabled(game, false);
+    mountOverlay(game);
 
     // Chess.com never contends for this flag once it's set, but re-assert
     // periodically as cheap insurance against anything that might.
@@ -245,6 +330,7 @@
     lockState.watchdogTimer = null;
 
     if (game) safeSetEnabled(game, lockState.prevEnabled);
+    unmountOverlay();
 
     log("lock released");
   }
