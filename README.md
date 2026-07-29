@@ -14,7 +14,6 @@ actually calculate before you move.
 - [Install](#install)
 - [Settings](#settings)
 - [Architecture](#architecture)
-- [Known limitations](#known-limitations)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -46,6 +45,12 @@ UI uses to freeze the board. On each of your turns, the extension:
 The opponent's move — yours or the engine's — always lands normally
 regardless of lock state; only *your* input is ever blocked.
 
+By default the board also stays frozen for the opponent's entire turn, not
+just at the start of yours — a premove armed before the lock engages would
+otherwise bypass the wait completely (confirmed live: it executes instantly,
+with no freeze at all). This can be turned off in settings if you'd rather
+keep premoves working and accept that they skip the wait.
+
 ## Install
 
 This extension isn't published to the Chrome Web Store; install it unpacked
@@ -68,8 +73,8 @@ from source.
 | **Threshold** | The clock value, in seconds, that triggers the bypass above. |
 | **Show a skip-wait button** | Toggles the on-board skip button. |
 | **Apply against the computer / Apply in live games** | Scope the lockout to either or both surfaces independently. |
+| **Block premoves** | Keeps the board frozen for the opponent's entire turn, not just the start of yours, so a premove can never be armed to bypass the wait. On by default; turn off to keep premoves working at the cost of letting them skip the lock. |
 | **Skip-wait shortcut** | Keyboard shortcut to end the current lock early (default `Space`). Click the box and press a key to rebind; ignored while a chat/search box is focused. |
-| **Piece grey-out intensity** *(Development)* | 0–100 tuning value for how strongly pieces dim during a lock. `0` disables dimming; `100` is the strongest allowed (still-readable 0.5 opacity). |
 
 Locks served, skips, and total time spent thinking are tracked and displayed
 in the popup.
@@ -90,21 +95,6 @@ that's the only place `<wc-chess-board>`'s `game` object is reachable.
 `chrome.storage` is the opposite — unreachable from a MAIN-world script — so
 `bridge.js` runs isolated, owns storage, and the two talk over
 `window.postMessage` with a namespaced `source` field.
-
-## Known limitations
-
-- **Clock reading is best-effort.** The extraction logic (`readClockFromApi`
-  / `readClockFromDom` in `src/inject.js`) was built without access to a
-  live timed game, so the exact shape of chess.com's clock data and DOM
-  markup is unconfirmed. It fails closed to "untimed" (always locks) rather
-  than misreading a value, but the clock-aware bypass may not fire correctly
-  yet on a real timed game.
-- **Premove cancellation during a lock is unverified**, for the same reason.
-
-Both are tracked in
-[#4](https://github.com/RithikGobinath/think-first/issues/4) — honest gaps,
-not silent ones. The code degrades safely rather than guessing, and the
-issue documents exactly what needs checking against a real account.
 
 ## Contributing
 

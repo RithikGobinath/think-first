@@ -169,12 +169,16 @@
   }
 
   // --- clock reading -----------------------------------------------------
-  // Best-effort only: verified on the untimed /play/computer page that
-  // game.times/game.timeControl exist but are empty ({}) there, so the real
-  // shape on a live timed game is unconfirmed. Every path below degrades to
-  // `null` ("untimed" - the lockout always applies) rather than throwing or
-  // guessing wrong, so a shape mismatch can only make the extension act as
-  // if there's no clock, never crash or read a bogus value.
+  // Confirmed live on a real timed game (#4): game.times/game.timeControl
+  // hold no usable remaining-time data - timeControl is just the static
+  // {baseTime, increment} config - so readClockFromApi() is effectively
+  // dead code that always falls through, harmlessly. The DOM path is the
+  // real one and is confirmed working: chess.com renders
+  // `<div class="clock-component clock-bottom clock-black ..."><span
+  // class="clock-time-monospace">2:58</span></div>`, and the selector/regex
+  // below correctly parse it. Kept degrading to `null` ("untimed" - the
+  // lockout always applies) on any unexpected shape rather than guessing
+  // wrong, since chess.com's markup could still change in the future.
 
   function extractTimeForSide(obj, side) {
     if (!obj || side == null) return null;
