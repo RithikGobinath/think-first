@@ -12,6 +12,9 @@
   const config = {
     enabled: true,
     waitMs: 10000,
+    clockMode: "fixed", // 'fixed' | 'scaled'
+    bypassBelowSec: 30, // skip the lockout entirely once my clock drops below this
+    scaleDivisor: 10, // 'scaled' mode only: wait shrinks toward remaining/scaleDivisor seconds
   };
 
   const state = {
@@ -100,6 +103,79 @@
     return null;
   }
 
+  // --- clock reading -----------------------------------------------------
+  // Best-effort only: verified on the untimed /play/computer page that
+  // game.times/game.timeControl exist but are empty ({}) there, so the real
+  // shape on a live timed game is unconfirmed. Every path below degrades to
+  // `null` ("untimed" - the lockout always applies) rather than throwing or
+  // guessing wrong, so a shape mismatch can only make the extension act as
+  // if there's no clock, never crash or read a bogus value.
+
+  function extractTimeForSide(obj, side) {
+    if (!obj || side == null) return null;
+    const candidates = [obj[side], obj[String(side)], side === 1 ? obj.white : obj.black, side === 1 ? obj.w : obj.b];
+    for (const c of candidates) {
+      if (typeof c === "number" && isFinite(c) && c >= 0) {
+        // Heuristic: chess.com clocks are typically tracked in ms internally.
+        return c > 1000 ? c / 1000 : c;
+      }
+    }
+    return null;
+  }
+
+  function readClockFromApi(game) {
+    const mySide = safeGetPlayingAs(game);
+    try {
+      const val = extractTimeForSide(game.times, mySide);
+      if (val != null) return val;
+    } catch (err) {
+      // fall through to timeControl
+    }
+    try {
+      const tc = game.timeControl;
+      const snapshot = tc && typeof tc.get === "function" ? tc.get() : tc;
+      const val = extractTimeForSide(snapshot, mySide);
+      if (val != null) return val;
+    } catch (err) {
+      // fall through to DOM
+    }
+    return null;
+  }
+
+  function parseClockText(text) {
+    const t = (text || "").trim();
+    let m;
+    if ((m = /^(\d+):(\d{2}):(\d{2})$/.exec(t))) {
+      return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]);
+    }
+    if ((m = /^(\d+):(\d{2})(?:\.(\d))?$/.exec(t))) {
+      return Number(m[1]) * 60 + Number(m[2]) + (m[3] ? Number(m[3]) / 10 : 0);
+    }
+    if ((m = /^(\d+)(?:\.(\d))?$/.exec(t))) {
+      return Number(m[1]) + (m[2] ? Number(m[2]) / 10 : 0);
+    }
+    return null;
+  }
+
+  function readClockFromDom() {
+    try {
+      // The board always renders the local player at the bottom.
+      const container = document.querySelector("#board-layout-player-bottom");
+      if (!container) return null;
+      const clockEl = container.querySelector('[class*="clock-component"], [class*="clock"]');
+      if (!clockEl) return null;
+      return parseClockText(clockEl.textContent);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function readMyClockSeconds(game) {
+    const fromApi = readClockFromApi(game);
+    if (fromApi != null) return fromApi;
+    return readClockFromDom();
+  }
+
   // --- lock engine -------------------------------------------------------
   // Freezes the board by flipping the same `enabled` flag chess.com's own UI
   // uses. Verified live: while `enabled:false`, drag/drop and legal-move
@@ -110,9 +186,17 @@
   // exit path (turn ends, game over, resign, mode change, tab unload, a
   // thrown error, or the watchdog) routes through endLock().
 
-  function computeDuration() {
-    // Clock-aware bypass/scaling lands in a follow-up PR. For now this is a
-    // flat wait whenever the extension is on.
+  function computeDuration(game) {
+    const remaining = readMyClockSeconds(game);
+    if (remaining == null) return config.waitMs; // untimed - always the full wait
+
+    if (remaining < config.bypassBelowSec) return 0; // flagging risk outweighs the drill
+
+    if (config.clockMode === "scaled") {
+      const scaledMs = (remaining / config.scaleDivisor) * 1000;
+      return Math.max(0, Math.min(config.waitMs, scaledMs));
+    }
+
     return config.waitMs;
   }
 
@@ -125,7 +209,7 @@
     if (mySide == null) return;
     if (safeGetTurn(game) !== mySide) return; // race guard vs. a stale caller
 
-    const duration = computeDuration();
+    const duration = computeDuration(game);
     if (duration <= 0) return;
 
     lockState.active = true;
