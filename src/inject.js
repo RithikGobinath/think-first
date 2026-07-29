@@ -42,6 +42,7 @@
     prevEnabled: true,
     overlayEl: null,
     countdownRAF: null,
+    pieceObserver: null,
   };
 
   function log(...args) {
@@ -241,10 +242,75 @@
   // thrown error, or the watchdog) routes through endLock().
 
   // --- overlay -------------------------------------------------------------
-  // Purely visual - dragging a piece during a lock already does nothing
-  // because of the `enabled` flag, so the veil below is pointer-events:none
-  // and can never be the thing actually blocking input. Only the skip
-  // button opts back into pointer events.
+  // The board itself is never touched - no darkening, no color/gradient
+  // changes - only the pieces dim. Tried a class on <wc-chess-board> plus a
+  // plain CSS descendant selector first; confirmed live that chess.com's own
+  // piece styling wins that fight even with !important (it has its own
+  // JS-driven piece animation engine - "pieceAnimationsEngine": "js-animator"
+  // in the board's own options). Setting opacity/filter directly on each
+  // .piece element's inline style with 'important' priority does stick, so
+  // that's what this does instead, with a MutationObserver re-applying it to
+  // any piece chess.com adds during the lock (captures, move animations).
+  //
+  // The countdown + skip button is a small badge placed next to the
+  // player's own clock rather than a full-board overlay. Chess.com's real
+  // clock markup on a live timed game was never confirmed (only the
+  // untimed /play/computer page was tested), so the anchor search below
+  // tries a few reasonable spots and degrades to a fixed corner badge
+  // rather than failing to mount at all.
+
+  const PIECE_DIM_OPACITY = "0.55";
+  const PIECE_DIM_FILTER = "grayscale(55%)";
+
+  function setPieceDimmed(el, dimmed) {
+    if (dimmed) {
+      el.style.setProperty("opacity", PIECE_DIM_OPACITY, "important");
+      el.style.setProperty("filter", PIECE_DIM_FILTER, "important");
+    } else {
+      el.style.removeProperty("opacity");
+      el.style.removeProperty("filter");
+    }
+  }
+
+  function dimAllPieces(board, dimmed) {
+    if (!board) return;
+    board.querySelectorAll(".piece").forEach((el) => setPieceDimmed(el, dimmed));
+  }
+
+  function startPieceObserver(board) {
+    stopPieceObserver();
+    if (!board) return;
+    lockState.pieceObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType !== 1) return;
+          if (node.classList && node.classList.contains("piece")) setPieceDimmed(node, true);
+          node.querySelectorAll && node.querySelectorAll(".piece").forEach((el) => setPieceDimmed(el, true));
+        });
+      }
+    });
+    lockState.pieceObserver.observe(board, { childList: true, subtree: true });
+  }
+
+  function stopPieceObserver() {
+    if (lockState.pieceObserver) {
+      lockState.pieceObserver.disconnect();
+      lockState.pieceObserver = null;
+    }
+  }
+
+  function findBadgeAnchor() {
+    const container = document.querySelector("#board-layout-player-bottom");
+    if (!container) return null;
+
+    const clockEl = container.querySelector('[class*="clock-component"], [class*="clock"]');
+    if (clockEl && clockEl.parentElement) {
+      return { insertBefore: clockEl, parent: clockEl.parentElement };
+    }
+
+    const row = container.querySelector(".player-row-container") || container.querySelector(".player-row-component") || container;
+    return { insertBefore: null, parent: row };
+  }
 
   function unmountOverlay() {
     if (lockState.countdownRAF != null) {
@@ -255,34 +321,37 @@
       lockState.overlayEl.remove();
       lockState.overlayEl = null;
     }
+    stopPieceObserver();
+    dimAllPieces(state.boundEl, false);
   }
 
   function mountOverlay(game) {
     unmountOverlay();
 
-    const anchor = document.querySelector("#board-layout-chessboard") || state.boundEl;
-    if (!anchor) return;
+    dimAllPieces(state.boundEl, true);
+    startPieceObserver(state.boundEl);
 
-    const wrap = document.createElement("div");
-    wrap.className = "ctf-overlay";
-    wrap.innerHTML =
-      '<div class="ctf-veil"></div>' +
-      '<div class="ctf-panel">' +
-      '<div class="ctf-ring">' +
-      '<svg viewBox="0 0 100 100">' +
-      '<circle class="ctf-ring-bg" cx="50" cy="50" r="45"></circle>' +
-      '<circle class="ctf-ring-fg" cx="50" cy="50" r="45"></circle>' +
-      "</svg>" +
-      '<span class="ctf-seconds"></span>' +
-      "</div>" +
-      '<div class="ctf-label">Think.</div>' +
-      (config.showSkipButton ? '<button type="button" class="ctf-skip">Skip wait</button>' : "") +
-      "</div>";
+    const badge = document.createElement("div");
+    badge.className = "ctf-badge";
+    badge.innerHTML =
+      '<span class="ctf-badge-seconds"></span>' + (config.showSkipButton ? '<button type="button" class="ctf-skip">Skip</button>' : "");
 
-    anchor.appendChild(wrap);
-    lockState.overlayEl = wrap;
+    const anchor = findBadgeAnchor();
+    if (anchor && anchor.insertBefore) {
+      anchor.parent.insertBefore(badge, anchor.insertBefore);
+    } else if (anchor && anchor.parent) {
+      anchor.parent.appendChild(badge);
+    } else {
+      // Couldn't find the clock row at all - pin to the board's corner
+      // rather than not showing anything.
+      const boardAnchor = document.querySelector("#board-layout-chessboard") || state.boundEl;
+      if (boardAnchor) boardAnchor.appendChild(badge);
+      badge.classList.add("ctf-badge-fallback");
+    }
 
-    const skipBtn = wrap.querySelector(".ctf-skip");
+    lockState.overlayEl = badge;
+
+    const skipBtn = badge.querySelector(".ctf-skip");
     if (skipBtn) {
       skipBtn.addEventListener("click", () => {
         log("skip button clicked");
@@ -295,26 +364,18 @@
   }
 
   function startCountdownAnimation() {
-    const overlay = lockState.overlayEl;
-    if (!overlay) return;
+    const badge = lockState.overlayEl;
+    if (!badge) return;
 
-    const ring = overlay.querySelector(".ctf-ring-fg");
-    const label = overlay.querySelector(".ctf-seconds");
-    const circumference = 2 * Math.PI * 45;
-    if (ring) {
-      ring.style.strokeDasharray = String(circumference);
-      ring.style.strokeDashoffset = "0";
-    }
+    const label = badge.querySelector(".ctf-badge-seconds");
 
     function tick() {
-      if (!lockState.active || lockState.overlayEl !== overlay) return;
+      if (!lockState.active || lockState.overlayEl !== badge) return;
 
       const elapsed = performance.now() - lockState.startTs;
       const remainMs = Math.max(0, lockState.durationMs - elapsed);
-      const frac = lockState.durationMs > 0 ? remainMs / lockState.durationMs : 0;
 
-      if (ring) ring.style.strokeDashoffset = String(circumference * (1 - frac));
-      if (label) label.textContent = String(Math.ceil(remainMs / 1000));
+      if (label) label.textContent = Math.ceil(remainMs / 1000) + "s";
 
       lockState.countdownRAF = requestAnimationFrame(tick);
     }

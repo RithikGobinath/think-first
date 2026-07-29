@@ -1,88 +1,50 @@
-/* Countdown veil + skip button rendered over the board during a lockout. */
+/* Lockout indicator: dims the pieces (never the board itself) and shows a
+   small countdown + skip badge next to the player's own clock.
 
-.ctf-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
+   Piece dimming itself is applied via inline style directly in inject.js,
+   not a CSS class here - confirmed live that chess.com's own piece
+   animation engine overrides a class-based descendant-selector rule even
+   with !important, but a direct inline style with 'important' priority
+   sticks. See setPieceDimmed() in inject.js. */
+
+.ctf-badge {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-}
-
-.ctf-veil {
-  position: absolute;
-  inset: 0;
-  background: rgba(10, 10, 14, 0.55);
-  /* Purely informational - the real block is game.setOptions({enabled:false}),
-     so this must never swallow clicks meant for the rest of the page. */
-  pointer-events: none;
-}
-
-.ctf-panel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  pointer-events: none;
-}
-
-.ctf-ring {
-  position: relative;
-  width: 96px;
-  height: 96px;
-}
-
-.ctf-ring svg {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.ctf-ring-bg {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.15);
-  stroke-width: 6;
-}
-
-.ctf-ring-fg {
-  fill: none;
-  stroke: #7fb069;
-  stroke-width: 6;
-  stroke-linecap: round;
-}
-
-.ctf-seconds {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 700 26px/1 system-ui, sans-serif;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-}
-
-.ctf-label {
-  font: 600 14px system-ui, sans-serif;
+  gap: 6px;
+  padding: 2px 8px;
+  margin: 0 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font: 600 12px system-ui, sans-serif;
   color: #f2f2f2;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  vertical-align: middle;
+  white-space: nowrap;
+  z-index: 9999;
+}
+
+.ctf-badge-seconds {
+  color: #7fb069;
 }
 
 .ctf-skip {
-  pointer-events: auto;
-  margin-top: 4px;
-  padding: 6px 14px;
+  padding: 1px 8px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  font: 600 12px system-ui, sans-serif;
+  font: 600 11px system-ui, sans-serif;
   cursor: pointer;
 }
 
 .ctf-skip:hover {
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Only used if the clock row couldn't be found at all - pin to the board's
+   corner instead of not showing anything. */
+.ctf-badge-fallback {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
 }
