@@ -6,17 +6,25 @@
 
   const LOG_PREFIX = "[Think First]";
 
-  // TODO(storage bridge): replace with settings synced from the popup via
-  // bridge.js. Hardcoded for now so the lock engine can be built and tested
-  // independently of the storage plumbing.
-  const config = {
+  // Mirrors bridge.js's DEFAULTS. Used until the bridge responds to our
+  // initial requestConfig, and to fill in any field a stored config is
+  // missing (e.g. after adding a new setting).
+  const DEFAULT_CONFIG = {
     enabled: true,
     waitMs: 10000,
     clockMode: "fixed", // 'fixed' | 'scaled'
     bypassBelowSec: 30, // skip the lockout entirely once my clock drops below this
     scaleDivisor: 10, // 'scaled' mode only: wait shrinks toward remaining/scaleDivisor seconds
     showSkipButton: true,
+    // TODO(#4): inert until premove cancellation is verified against a live
+    // timed game - see the issue for why. Reserved in the schema so the
+    // popup toggle has somewhere to write once it does something.
+    blockPremoveIntoLock: true,
+    onComputer: true,
+    onOnline: true,
   };
+
+  const config = Object.assign({}, DEFAULT_CONFIG);
 
   const state = {
     boundEl: null, // the <wc-chess-board> element we're currently attached to
@@ -46,6 +54,14 @@
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function reportStats(delta) {
+    try {
+      window.postMessage({ source: "ctf-inject", type: "statsDelta", payload: delta }, "*");
+    } catch (err) {
+      // best-effort - a dropped stats update should never affect the lock
+    }
   }
 
   // --- safe wrappers around the game API -----------------------------------
@@ -104,6 +120,13 @@
     if (path.startsWith("/play/computer")) return "computer";
     if (path.startsWith("/game/live") || path.startsWith("/play/online")) return "online";
     return null;
+  }
+
+  function isApplicable() {
+    const kind = isApplicablePath();
+    if (kind === "computer") return config.onComputer;
+    if (kind === "online") return config.onOnline;
+    return false; // analysis, puzzles, lessons, etc.
   }
 
   // --- clock reading -----------------------------------------------------
@@ -235,6 +258,7 @@
     if (skipBtn) {
       skipBtn.addEventListener("click", () => {
         log("skip button clicked");
+        reportStats({ skips: 1 });
         endLock(game);
       });
     }
@@ -287,6 +311,7 @@
   function beginLock(game) {
     if (lockState.active) return;
     if (!config.enabled) return;
+    if (!isApplicable()) return;
     if (safeIsGameOver(game)) return;
 
     const mySide = safeGetPlayingAs(game);
@@ -316,10 +341,13 @@
     }, duration + 2000);
 
     log("lock engaged for", duration, "ms");
+    reportStats({ locksServed: 1 });
   }
 
   function endLock(game) {
     if (!lockState.active) return;
+
+    const elapsedMs = Math.round(Math.min(performance.now() - lockState.startTs, lockState.durationMs));
 
     lockState.active = false;
     clearTimeout(lockState.timer);
@@ -333,6 +361,7 @@
     unmountOverlay();
 
     log("lock released");
+    reportStats({ msWaited: elapsedMs });
   }
 
   // --- turn detection ---------------------------------------------------------
@@ -477,8 +506,39 @@
     };
   }
 
+  // --- settings bridge -------------------------------------------------
+  // chrome.storage isn't reachable from this MAIN-world script, so config
+  // comes from bridge.js (isolated world) over window.postMessage. Only
+  // messages we posted ourselves matter, so ignore anything not from our
+  // own window with the expected source tag - this also naturally excludes
+  // postMessage traffic from chess.com's own code.
+
+  function applyConfig(payload) {
+    const wasEnabled = config.enabled;
+    Object.assign(config, DEFAULT_CONFIG, payload || {});
+    log("config updated", config);
+
+    if (!config.enabled && lockState.active) {
+      endLock(state.boundGame); // fail-open: turning the extension off must never leave a lock stuck
+    }
+    if (config.enabled && !wasEnabled && state.boundGame) {
+      onGameLoaded(); // re-evaluate now that we're back on, in case it's already my turn
+    }
+  }
+
+  function onWindowMessage(event) {
+    if (event.source !== window) return;
+    const data = event.data;
+    if (!data || data.source !== "ctf-bridge") return;
+    if (data.type === "config") applyConfig(data.payload);
+  }
+
   function init() {
     log("initializing");
+
+    window.addEventListener("message", onWindowMessage);
+    window.postMessage({ source: "ctf-inject", type: "requestConfig" }, "*");
+
     tryAttach();
 
     if (window.customElements && customElements.whenDefined) {
