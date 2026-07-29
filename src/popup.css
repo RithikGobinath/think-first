@@ -128,18 +128,6 @@ input[type="number"] {
   color: #7fb069;
 }
 
-.tf-dev-section {
-  border-top: 1px dashed #3a3a40;
-}
-
-.tf-dev-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #9a9aa0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 8px;
-}
 
 .tf-radio-group {
   display: flex;
