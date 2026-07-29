@@ -39,7 +39,7 @@
     enabled: document.getElementById("enabled"),
     waitMs: document.getElementById("waitMs"),
     waitMsValue: document.getElementById("waitMsValue"),
-    clockMode: document.getElementById("clockMode"),
+    clockModeInputs: document.querySelectorAll('input[name="clockMode"]'),
     bypassBelowSec: document.getElementById("bypassBelowSec"),
     scaleDivisor: document.getElementById("scaleDivisor"),
     scaleDivisorRow: document.getElementById("scaleDivisorRow"),
@@ -71,7 +71,9 @@
     els.enabled.checked = cfg.enabled;
     els.waitMs.value = cfg.waitMs;
     els.waitMsValue.textContent = formatWait(cfg.waitMs);
-    els.clockMode.value = cfg.clockMode;
+    els.clockModeInputs.forEach((input) => {
+      input.checked = input.value === cfg.clockMode;
+    });
     els.bypassBelowSec.value = cfg.bypassBelowSec;
     els.scaleDivisor.value = cfg.scaleDivisor;
     els.showSkipButton.checked = cfg.showSkipButton;
@@ -96,9 +98,12 @@
   });
   els.waitMs.addEventListener("change", () => storageSet({ waitMs: Number(els.waitMs.value) }));
 
-  els.clockMode.addEventListener("change", () => {
-    updateScaleDivisorVisibility(els.clockMode.value);
-    storageSet({ clockMode: els.clockMode.value });
+  els.clockModeInputs.forEach((input) => {
+    input.addEventListener("change", () => {
+      if (!input.checked) return;
+      updateScaleDivisorVisibility(input.value);
+      storageSet({ clockMode: input.value });
+    });
   });
 
   els.bypassBelowSec.addEventListener("change", () => storageSet({ bypassBelowSec: Number(els.bypassBelowSec.value) }));

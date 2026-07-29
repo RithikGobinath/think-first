@@ -26,10 +26,20 @@
       <div class="tf-row">
         <label for="clockMode">When my clock runs low</label>
       </div>
-      <select id="clockMode">
-        <option value="fixed">Skip the wait below threshold</option>
-        <option value="scaled">Shrink the wait as time drops</option>
-      </select>
+      <!-- Radio group, not a <select>: a native select's dropdown list
+           reliably closes the extension popup the instant it opens on
+           Chrome (a longstanding bug with <select> inside action popups),
+           which made this control look completely unresponsive. -->
+      <div class="tf-radio-group" role="radiogroup" aria-label="When my clock runs low">
+        <label class="tf-radio">
+          <input type="radio" name="clockMode" value="fixed" />
+          Skip the wait below threshold
+        </label>
+        <label class="tf-radio">
+          <input type="radio" name="clockMode" value="scaled" />
+          Shrink the wait as time drops
+        </label>
+      </div>
 
       <div class="tf-row tf-row-tight">
         <label for="bypassBelowSec">Threshold (seconds remaining)</label>
