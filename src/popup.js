@@ -48,7 +48,6 @@
     onComputer: document.getElementById("onComputer"),
     onOnline: document.getElementById("onOnline"),
     skipKeyInput: document.getElementById("skipKeyInput"),
-    pieceDimIntensity: document.getElementById("pieceDimIntensity"),
     statLocks: document.getElementById("statLocks"),
     statSkips: document.getElementById("statSkips"),
     statWaited: document.getElementById("statWaited"),
@@ -98,7 +97,6 @@
     els.onComputer.checked = cfg.onComputer;
     els.onOnline.checked = cfg.onOnline;
     els.skipKeyInput.value = codeToLabel(cfg.skipKey);
-    els.pieceDimIntensity.value = cfg.pieceDimIntensity;
     updateScaleDivisorVisibility(cfg.clockMode);
 
     const stats = cfg.stats || DEFAULTS.stats;
@@ -132,12 +130,6 @@
   els.showSkipButton.addEventListener("change", () => storageSet({ showSkipButton: els.showSkipButton.checked }));
   els.onComputer.addEventListener("change", () => storageSet({ onComputer: els.onComputer.checked }));
   els.onOnline.addEventListener("change", () => storageSet({ onOnline: els.onOnline.checked }));
-
-  els.pieceDimIntensity.addEventListener("change", () => {
-    const pct = Math.max(0, Math.min(100, Number(els.pieceDimIntensity.value) || 0));
-    els.pieceDimIntensity.value = pct;
-    storageSet({ pieceDimIntensity: pct });
-  });
 
   // Click-to-capture rebind: focus the box, press the desired key, done.
   // Readonly so typing can't leave stray characters in it.
