@@ -114,12 +114,40 @@
   // --- applicability ---------------------------------------------------------
   // Only arm on actual games (vs. the computer or a live opponent), never on
   // analysis boards, puzzles, or lessons, which also use <wc-chess-board>.
+  //
+  // "online" is a denylist, not an allowlist: chess.com's real live-game URL
+  // scheme was never confirmed against an actual account (only /play/computer
+  // was ever tested live), so guessing at exact path prefixes like
+  // /game/live risked silently never matching a real game - which is exactly
+  // what happened. Excluding known non-game surfaces and defaulting the rest
+  // to "online" is safe because the real gate against false positives is
+  // getPlayingAs() returning a seat, not the URL - see beginLock()/
+  // onGameLoaded(), which both bail out on spectating/analysis regardless.
+
+  const NON_GAME_PATH_PREFIXES = [
+    "/analysis",
+    "/puzzles",
+    "/lessons",
+    "/explorer",
+    "/home",
+    "/login",
+    "/register",
+    "/article",
+    "/news",
+    "/forum",
+    "/clubs",
+    "/tv",
+    "/videos",
+    "/member",
+    "/settings",
+    "/leaderboard",
+  ];
 
   function isApplicablePath() {
     const path = location.pathname;
     if (path.startsWith("/play/computer")) return "computer";
-    if (path.startsWith("/game/live") || path.startsWith("/play/online")) return "online";
-    return null;
+    if (NON_GAME_PATH_PREFIXES.some((prefix) => path.startsWith(prefix))) return null;
+    return "online"; // default: assume any other page with a bound, seated game is a real game
   }
 
   function isApplicable() {
